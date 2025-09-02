@@ -2,6 +2,7 @@
 import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.camera2.CameraManager
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
@@ -24,25 +25,22 @@ class SignalManager(private val context: Context) {
 
     fun startSignal() {
         signalJob?.cancel()
-
         signalJob = CoroutineScope(Dispatchers.Default).launch {
-            Log.d("SignalManager", "Starting 2-second signal!")
+            Log.d("SignalManager", "Starting 4-second signal!")
             startVibration()
             startFlashlight()
             startSound()
-
             delay(4000L)
             Log.d("SignalManager", "Auto-stopping signal after 2 seconds.")
             stopSignal()
         }
     }
 
-    private fun stopSignal() {
+    fun stopSignal() {
         stopVibration()
         stopFlashlight()
         stopSound()
     }
-
 
     @SuppressLint("NewApi")
     private fun startSound() {
@@ -51,6 +49,14 @@ class SignalManager(private val context: Context) {
             Log.d("SignalManager", "Playing sound from raw resource. URI: $soundUri")
 
             ringtone = RingtoneManager.getRingtone(context, soundUri)
+
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+
+            ringtone?.audioAttributes = audioAttributes
+
             ringtone?.isLooping = true
 
             val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
@@ -91,6 +97,6 @@ class SignalManager(private val context: Context) {
         flashlightJob?.cancel()
         try {
             cameraManager.setTorchMode(cameraManager.cameraIdList[0], false)
-        } catch (e: Exception) { /* ignore */ }
+        } catch (e: Exception) {}
     }
 }
