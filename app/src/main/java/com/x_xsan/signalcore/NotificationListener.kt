@@ -1,5 +1,6 @@
 package com.x_xsan.signalcore
 
+import SignalManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log

@@ -1,15 +1,15 @@
-package com.x_xsan.signalcore
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
-import android.os.Build
+import android.net.Uri
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.os.VibratorManager
 import android.util.Log
+import com.x_xsan.signalcore.R
 import kotlinx.coroutines.*
 
 class SignalManager(private val context: Context) {
@@ -20,22 +20,48 @@ class SignalManager(private val context: Context) {
 
     private var ringtone: Ringtone? = null
     private var flashlightJob: Job? = null
+    private var signalJob: Job? = null
 
     fun startSignal() {
-        Log.d("SignalManager", "Starting signal!")
-        startVibration()
-        startFlashlight()
-        startSound()
+        signalJob?.cancel()
+
+        signalJob = CoroutineScope(Dispatchers.Default).launch {
+            Log.d("SignalManager", "Starting 2-second signal!")
+            startVibration()
+            startFlashlight()
+            startSound()
+
+            delay(4000L)
+            Log.d("SignalManager", "Auto-stopping signal after 2 seconds.")
+            stopSignal()
+        }
     }
 
-    fun stopSignal() {
-        Log.d("SignalManager", "Stopping signal!")
+    private fun stopSignal() {
         stopVibration()
         stopFlashlight()
         stopSound()
     }
 
 
+    @SuppressLint("NewApi")
+    private fun startSound() {
+        try {
+            val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.notification_sound}")
+            Log.d("SignalManager", "Playing sound from raw resource. URI: $soundUri")
+
+            ringtone = RingtoneManager.getRingtone(context, soundUri)
+            ringtone?.isLooping = true
+
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
+
+            ringtone?.play()
+
+        } catch (e: Exception) {
+            Log.e("SignalManager", "Failed to play sound from raw", e)
+        }
+    }
 
     private fun startVibration() {
         if (vibrator.hasVibrator()) {
@@ -44,19 +70,14 @@ class SignalManager(private val context: Context) {
         }
     }
 
-    private fun stopVibration() {
-        vibrator.cancel()
-    }
-
     private fun startFlashlight() {
+        flashlightJob?.cancel()
         try {
             val cameraId = cameraManager.cameraIdList[0]
             flashlightJob = CoroutineScope(Dispatchers.Default).launch {
                 while (isActive) {
-                    cameraManager.setTorchMode(cameraId, true)
-                    delay(250)
-                    cameraManager.setTorchMode(cameraId, false)
-                    delay(250)
+                    cameraManager.setTorchMode(cameraId, true); delay(250)
+                    cameraManager.setTorchMode(cameraId, false); delay(250)
                 }
             }
         } catch (e: Exception) {
@@ -64,29 +85,12 @@ class SignalManager(private val context: Context) {
         }
     }
 
+    private fun stopSound() { ringtone?.stop() }
+    private fun stopVibration() { vibrator.cancel() }
     private fun stopFlashlight() {
         flashlightJob?.cancel()
         try {
             cameraManager.setTorchMode(cameraManager.cameraIdList[0], false)
-        } catch (e: Exception) {
-        }
-    }
-
-    private fun startSound() {
-        try {
-            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ringtone = RingtoneManager.getRingtone(context, alarmUri)
-
-            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0)
-
-            ringtone?.play()
-        } catch (e: Exception) {
-            Log.e("SignalManager", "Failed to play sound", e)
-        }
-    }
-
-    private fun stopSound() {
-        ringtone?.stop()
+        } catch (e: Exception) { /* ignore */ }
     }
 }
