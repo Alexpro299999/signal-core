@@ -12,6 +12,9 @@ class NotificationListener : NotificationListenerService() {
     private val userPreferencesRepository: UserPreferencesRepository by lazy {
         UserPreferencesRepository(applicationContext)
     }
+    private val signalManager: SignalManager by lazy {
+        SignalManager(applicationContext)
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
@@ -26,7 +29,7 @@ class NotificationListener : NotificationListenerService() {
 
                     if (title in priorityContacts) {
                         Log.d("NotificationListener", "!!! MATCH FOUND: $title !!!")
-                        // TODO: Здесь будет код для запуска звука, вибрации и фонарика!
+                        signalManager.startSignal()
                     }
                 }
             }
