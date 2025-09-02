@@ -1,15 +1,24 @@
+package com.x_xsan.signalcore
+
 import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.x_xsan.signalcore.UserPreferencesRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+data class MainScreenState(
+    val contactNameInput: String = "",
+    val contacts: List<String> = emptyList(),
+    val hasDndPermission: Boolean = false,
+    val hasNotificationListenerPermission: Boolean = false,
+    val isLoading: Boolean = true
+)
 
+class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val userPreferencesRepository = UserPreferencesRepository(application)
     private val notificationManager = application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -17,8 +26,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<MainScreenState> = _uiState.asStateFlow()
 
     init {
-        checkDndPermission()
-
         viewModelScope.launch {
             userPreferencesRepository.priorityContacts.collect { contactsFromRepo ->
                 _uiState.update { it.copy(contacts = contactsFromRepo) }
@@ -26,10 +33,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun checkDndPermission() {
-        val hasPermission = notificationManager.isNotificationPolicyAccessGranted
-        Log.d("MainViewModel", "Checking DND permission. Has permission? -> $hasPermission")
-        _uiState.update { it.copy(shouldShowDndPermissionRequest = !hasPermission) }
+    fun updatePermissionsState() {
+        val dnd = notificationManager.isNotificationPolicyAccessGranted
+        val packageName = getApplication<Application>().packageName
+        val listeners = NotificationManagerCompat.getEnabledListenerPackages(getApplication())
+        val notification = listeners.contains(packageName)
+
+        Log.d("MainViewModel", "Updating permissions. DND: $dnd, Listener: $notification")
+
+        _uiState.update {
+            it.copy(
+                hasDndPermission = dnd,
+                hasNotificationListenerPermission = notification,
+                isLoading = false
+            )
+        }
     }
 
     fun onContactNameChange(newName: String) {
@@ -45,9 +63,3 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 }
-
-data class MainScreenState(
-    val contactNameInput: String = "",
-    val contacts: List<String> = emptyList(),
-    val shouldShowDndPermissionRequest: Boolean = false
-)
