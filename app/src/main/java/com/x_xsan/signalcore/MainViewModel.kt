@@ -9,18 +9,21 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.os.PowerManager
 
 data class MainScreenState(
     val contactNameInput: String = "",
     val contacts: List<String> = emptyList(),
     val hasDndPermission: Boolean = false,
     val hasNotificationListenerPermission: Boolean = false,
+    val hasBatteryOptimizationPermission: Boolean = false,
     val isLoading: Boolean = true
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val userPreferencesRepository = UserPreferencesRepository(application)
     private val notificationManager = application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val powerManager = application.getSystemService(Context.POWER_SERVICE) as PowerManager
 
     private val _uiState = MutableStateFlow(MainScreenState())
     val uiState: StateFlow<MainScreenState> = _uiState.asStateFlow()
@@ -39,16 +42,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val listeners = NotificationManagerCompat.getEnabledListenerPackages(getApplication())
         val notification = listeners.contains(packageName)
 
-        Log.d("MainViewModel", "Updating permissions. DND: $dnd, Listener: $notification")
+        val batteryOpt = powerManager.isIgnoringBatteryOptimizations(packageName)
+
+        Log.d("MainViewModel", "Updating permissions. DND: $dnd, Listener: $notification, BatteryOpt: $batteryOpt")
 
         _uiState.update {
             it.copy(
                 hasDndPermission = dnd,
                 hasNotificationListenerPermission = notification,
+                hasBatteryOptimizationPermission = batteryOpt, // 3. Обновляем новое состояние
                 isLoading = false
             )
         }
     }
+
 
     fun onContactNameChange(newName: String) {
         _uiState.update { it.copy(contactNameInput = newName) }
