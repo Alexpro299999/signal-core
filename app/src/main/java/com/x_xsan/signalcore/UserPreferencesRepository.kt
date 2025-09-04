@@ -41,4 +41,13 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.CONTACT_LIST] = currentContacts + newContact
         }
     }
+    suspend fun removeContact(contactToRemove: String) {
+        context.dataStore.edit { preferences ->
+            val currentContacts = preferences[PreferencesKeys.CONTACT_LIST] ?: setOf()
+            val updatedContacts = currentContacts.toMutableSet().apply {
+                remove(contactToRemove)
+            }
+            preferences[PreferencesKeys.CONTACT_LIST] = updatedContacts
+        }
+    }
 }
