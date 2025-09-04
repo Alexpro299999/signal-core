@@ -50,4 +50,15 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.CONTACT_LIST] = updatedContacts
         }
     }
+
+    suspend fun updateContact(oldName: String, newName: String) {
+        context.dataStore.edit { preferences ->
+            val currentContacts = preferences[PreferencesKeys.CONTACT_LIST] ?: setOf()
+            val updatedContacts = currentContacts.toMutableSet().apply {
+                remove(oldName)
+                add(newName)
+            }
+            preferences[PreferencesKeys.CONTACT_LIST] = updatedContacts
+        }
+    }
 }
