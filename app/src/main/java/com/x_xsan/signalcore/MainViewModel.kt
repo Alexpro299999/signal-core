@@ -74,4 +74,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update { it.copy(contactNameInput = "") }
         }
     }
+
+    fun onRemoveContactClick(contactToRemove: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.removeContact(contactToRemove)
+        }
+    }
+
 }
