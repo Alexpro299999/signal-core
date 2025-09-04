@@ -9,11 +9,14 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -84,9 +87,47 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                 } else {
                     MainAppUI(viewModel = viewModel)
                 }
+                if (uiState.isEditDialogOpen) {
+                    EditContactDialog(
+                        value = uiState.editContactInput,
+                        onValueChange = { viewModel.onEditContactNameChange(it) },
+                        onConfirm = { viewModel.onEditDialogConfirm() },
+                        onDismiss = { viewModel.onEditDialogDismiss() }
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+fun EditContactDialog(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Изменить имя контакта") },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text("Новое имя") }
+            )
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
 }
 
 @Composable
@@ -117,12 +158,19 @@ fun MainAppUI(viewModel: MainViewModel) {
                     fontSize = 20.sp,
                     modifier = Modifier.padding(start = 8.dp)
                 )
-
-                IconButton(onClick = { viewModel.onRemoveContactClick(contactName) }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Удалить контакт"
-                    )
+                Row {
+                    IconButton(onClick = { viewModel.onEditContactClick(contactName) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Изменить контакт"
+                        )
+                    }
+                    IconButton(onClick = { viewModel.onRemoveContactClick(contactName) }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Удалить контакт"
+                        )
+                    }
                 }
             }
         }
