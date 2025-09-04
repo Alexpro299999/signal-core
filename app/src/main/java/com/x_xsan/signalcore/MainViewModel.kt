@@ -16,7 +16,10 @@ data class MainScreenState(
     val hasDndPermission: Boolean = false,
     val hasNotificationListenerPermission: Boolean = false,
     val hasBatteryOptimizationPermission: Boolean = true,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val isEditDialogOpen: Boolean = false,
+    val contactToEdit: String = "",
+    val editContactInput: String = ""
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -78,6 +81,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onRemoveContactClick(contactToRemove: String) {
         viewModelScope.launch {
             userPreferencesRepository.removeContact(contactToRemove)
+        }
+    }
+
+    fun onEditContactClick(contact: String) {
+        _uiState.update {
+            it.copy(
+                isEditDialogOpen = true,
+                contactToEdit = contact,
+                editContactInput = contact
+            )
+        }
+    }
+
+    fun onEditContactNameChange(newName: String) {
+        _uiState.update { it.copy(editContactInput = newName) }
+    }
+
+    fun onEditDialogConfirm() {
+        val oldName = _uiState.value.contactToEdit
+        val newName = _uiState.value.editContactInput
+
+        if (newName.isBlank() || oldName == newName) {
+            onEditDialogDismiss()
+            return
+        }
+
+        viewModelScope.launch {
+            userPreferencesRepository.updateContact(oldName, newName)
+            onEditDialogDismiss()
+        }
+    }
+
+    fun onEditDialogDismiss() {
+        _uiState.update {
+            it.copy(
+                isEditDialogOpen = false,
+                contactToEdit = "",
+                editContactInput = ""
+            )
         }
     }
 
