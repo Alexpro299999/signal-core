@@ -67,7 +67,7 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(64.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (!uiState.hasNotificationListenerPermission) {
